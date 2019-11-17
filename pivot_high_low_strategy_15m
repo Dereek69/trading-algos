@@ -1,0 +1,50 @@
+//@version=4
+strategy("Pivots strategy",overlay = true, default_qty_type = strategy.percent_of_equity, default_qty_value = 100, initial_capital = 100, commission_type = strategy.commission.percent, commission_value = 0.1)
+
+//Inputs
+x = input(title = "Left candles", type = input.integer, defval = 68)
+y = input(title = "Right candles", type = input.integer, defval = 30)
+length_fast = input(title = "EMA fast", type = input.integer, defval = 2, minval = 1)
+length_slow = input(title = "EMA fast", type = input.integer, defval = 150, minval = 1)
+offset = input(title = "Offset %", type = input.float, defval = 2.61, minval = 0)
+
+//Emas and offsets
+EMA_fast = ema(close,length_fast)
+EMA_slow = ema(close,length_slow)
+up_off = (100 + offset)/100
+down_off = (100 - offset)/100
+
+//High - Low lines based on pivot points
+var pivot_high = high
+var pivot_low = low
+t_high = highest(x)
+t_low = lowest(x)
+if change(t_high, y) == false
+    pivot_high := t_high
+if change(t_low, y) == false
+    pivot_low := t_low
+
+//Orders logic
+bottom_long = crossover(EMA_fast, pivot_low*up_off)
+top_long = crossover(EMA_fast, pivot_high*up_off)
+top_short = crossunder(EMA_fast, pivot_high*down_off)
+bottom_short = crossunder(EMA_fast, pivot_low*down_off)
+tp = cross(EMA_fast,EMA_slow)
+
+//Orders execution
+strategy.entry("Bottom Long", true, when = bottom_long)
+strategy.entry("Top Short", false, when = top_short)
+
+//strategy.entry("Top Long", true, when = top_long, stop = pivot_high)
+//strategy.entry("Bottom Short", false, when = bottom_short, stop = pivot_low)
+
+strategy.close("Top Long", when = tp)
+strategy.close("Bottom Short", when = tp)
+//strategy.close("Bottom Long", when = tp)
+//strategy.close("Top Short", when = tp)
+
+//Plots
+plot(EMA_fast, color = color.orange)
+plot(EMA_slow, color = color.red)
+plot(pivot_high, color = color.lime)
+plot(pivot_low, color = color.blue)
